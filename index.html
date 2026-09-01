@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تقرير الاحتياج التدريبي</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--primary:#146c5a;--primary2:#0e5144;--gold:#c49a4a;--bg:#f5f7f8;--card:#fff;--text:#172126;--muted:#68747a;--line:#dfe6e8;--danger:#b42318;--ok:#157f3f}
+    *{box-sizing:border-box} body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1500px;margin:auto;padding:26px}.hero{background:linear-gradient(135deg,var(--primary2),var(--primary));color:#fff;border-radius:22px;padding:28px 30px;box-shadow:0 10px 30px #0e514420}
+    .hero h1{margin:0 0 8px;font-size:28px}.hero p{margin:0;opacity:.9;line-height:1.8}.upload{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .btn,.file-label{border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer;font-size:14px}.file-label{background:#fff;color:var(--primary2);display:inline-block}.btn{background:var(--gold);color:#1f1f1f}.btn.secondary{background:#e8efed;color:var(--primary2)}
+    input[type=file]{display:none}.privacy{font-size:12px;opacity:.85}.status{margin-top:12px;font-size:13px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:20px 0}.kpi{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 5px 18px #2632380a}.kpi .n{font-size:30px;font-weight:800;color:var(--primary2);margin-top:7px}.kpi .t{font-size:13px;color:var(--muted)}
+    .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;min-height:320px}.panel h3{margin:0 0 15px;font-size:17px}.chartbox{height:270px}
+    .filters{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:16px 0;display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px}.filters input,.filters select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff;color:var(--text)}
+    .table-card{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}.table-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}.table-head h3{margin:0;font-size:17px}.count{color:var(--muted);font-size:13px}
+    .table-wrap{overflow:auto;max-height:650px}table{width:100%;border-collapse:collapse;min-width:1450px;font-size:13px}th{position:sticky;top:0;z-index:2;background:#eef4f2;color:var(--primary2);text-align:right;padding:12px;border-bottom:1px solid var(--line)}td{padding:11px 12px;border-bottom:1px solid #eef1f2;vertical-align:top;line-height:1.6}tr:hover td{background:#fafcfc}.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#edf4f2;color:var(--primary2);font-weight:700;white-space:nowrap}.badge.high{background:#fff0ed;color:#b42318}.badge.medium{background:#fff7e6;color:#8a5a00}.badge.low{background:#eef6ff;color:#175cd3}.badge.ok{background:#eaf8ef;color:var(--ok)}.badge.bad{background:#fff0ed;color:var(--danger)}
+    .empty{text-align:center;padding:55px 20px;color:var(--muted);background:#fff;border-radius:18px;border:1px dashed #cbd5d8;margin-top:18px}.hidden{display:none!important}.footer{font-size:12px;color:var(--muted);text-align:center;margin:20px 0}
+    @media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.panels{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.wrap{padding:14px}}@media(max-width:600px){.grid,.filters{grid-template-columns:1fr}.hero{padding:22px}.hero h1{font-size:22px}}
+    @media print{.hero .upload,.privacy,.filters,.footer{display:none!important}.wrap{max-width:none;padding:0}.hero{box-shadow:none;border-radius:0}.table-wrap{max-height:none;overflow:visible}table{min-width:0;font-size:9px}.panel{break-inside:avoid}.table-card{break-before:page}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>لوحة تحليل الاحتياج التدريبي</h1>
+    <p>ارفع ملفًا أو عدة ملفات Excel من نموذج حصر الاحتياج التدريبي، وسيتم دمج جميع الإدارات والفروع والتبويبات في تقرير واحد.</p>
+    <div class="upload">
+      <label class="file-label" for="files">📊 اختيار ملفات Excel</label>
+      <input id="files" type="file" accept=".xlsx,.xls" multiple />
+      <button class="btn" id="printBtn" type="button">طباعة / حفظ PDF</button>
+      <button class="btn secondary" id="resetBtn" type="button">مسح التقرير</button>
+      <span class="privacy">🔒 تتم معالجة الملفات داخل متصفحك ولا يتم رفع بيانات الموظفين إلى GitHub.</span>
+    </div>
+    <div id="status" class="status">في انتظار رفع الملفات…</div>
+  </section>
+
+  <div id="empty" class="empty">ارفع ملفات الاحتياج التدريبي لعرض التقرير.</div>
+
+  <main id="dashboard" class="hidden">
+    <section class="grid">
+      <div class="kpi"><div class="t">إجمالي سجلات الموظفين</div><div class="n" id="kTotal">0</div></div>
+      <div class="kpi"><div class="t">الموظفون الفريدون</div><div class="n" id="kEmployees">0</div></div>
+      <div class="kpi"><div class="t">الدورات التدريبية</div><div class="n" id="kCourses">0</div></div>
+      <div class="kpi"><div class="t">التجارب / الزيارات الخارجية</div><div class="n" id="kVisits">0</div></div>
+      <div class="kpi"><div class="t">التدريب أثناء العمل</div><div class="n" id="kOjt">0</div></div>
+    </section>
+
+    <section class="panels">
+      <div class="panel"><h3>التوزيع حسب نوع التطوير</h3><div class="chartbox"><canvas id="devChart"></canvas></div></div>
+      <div class="panel"><h3>التوزيع حسب نوع الاحتياج</h3><div class="chartbox"><canvas id="needChart"></canvas></div></div>
+      <div class="panel"><h3>الأولوية</h3><div class="chartbox"><canvas id="priorityChart"></canvas></div></div>
+      <div class="panel"><h3>أعلى الإدارات / الفروع في عدد الاحتياجات</h3><div class="chartbox"><canvas id="deptChart"></canvas></div></div>
+    </section>
+
+    <section class="filters">
+      <input id="search" placeholder="بحث بالاسم أو المسمى أو الاحتياج أو البرنامج…" />
+      <select id="fDev"><option value="">كل أنواع التطوير</option></select>
+      <select id="fNeed"><option value="">كل أنواع الاحتياج</option></select>
+      <select id="fDept"><option value="">كل الإدارات / الفروع</option></select>
+      <select id="fPriority"><option value="">كل الأولويات</option></select>
+      <select id="fStatus"><option value="">كل حالات الاكتمال</option></select>
+    </section>
+
+    <section class="table-card">
+      <div class="table-head"><h3>التفاصيل</h3><span class="count" id="rowCount"></span></div>
+      <div class="table-wrap"><table><thead><tr>
+        <th>الموظف</th><th>المسمى الوظيفي</th><th>الإدارة / الفرع</th><th>نوع الاحتياج</th><th>نوع التطوير</th><th>وصف الفجوة</th><th>البرنامج / الجهة المقترحة</th><th>الأولوية</th><th>الأثر المتوقع</th><th>الحالة</th>
+      </tr></thead><tbody id="tbody"></tbody></table></div>
+    </section>
+  </main>
+  <div class="footer">Training Needs Dashboard • البيانات تبقى على جهاز المستخدم</div>
+</div>
+<script>
+  const $=id=>document.getElementById(id); let rows=[]; let charts={};
+  const clean=v=>(v===null||v===undefined?'':String(v)).replace(/\s+/g,' ').trim();
+  const normDev=v=>{const s=clean(v); if(!s)return ''; if(/دورة/.test(s))return 'دورة تدريبية'; if(/تجارب|زيارة|خارجي/.test(s))return 'تجارب / زيارات خارجية'; if(/أثناء.*العمل|اثناء.*العمل|اللعمل/.test(s))return 'تدريب أثناء العمل'; if(/ذاتي/.test(s))return 'تعلم ذاتي'; if(/ورشة/.test(s))return 'ورشة عمل'; return s};
+  function findHeader(data){return data.findIndex(r=>Array.isArray(r)&&r.some(c=>clean(c)==='اسم الموظف')&&r.some(c=>clean(c)==='نوع التطوير'))}
+  function metaFrom(data,hi){let dept=''; for(let i=0;i<Math.min(hi,8);i++){const r=data[i]||[]; for(let j=0;j<r.length;j++){if(clean(r[j]).includes('الإدارة / القسم')) dept=clean(r[j+1]);}} return dept}
+  function parseSheet(ws,fileName,sheetName){const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}); const hi=findHeader(data); if(hi<0)return []; const headers=data[hi].map(clean); const deptMeta=metaFrom(data,hi); const out=[];
+    for(let i=hi+1;i<data.length;i++){const r=data[i]; if(!r||!clean(r[1]))continue; const o={}; headers.forEach((h,j)=>{if(h)o[h]=r[j]}); const name=clean(o['اسم الموظف']); const title=clean(o['المسمى الوظيفي']); if(!name||!title)continue;
+      const devRaw=clean(o['نوع التطوير']); const rec={name,title,need:clean(o['نوع الاحتياج']),gap:clean(o['تفاصيل الاحتياج / وصف الفجوة']),dev: normDev(devRaw),devRaw,program:clean(o['عنوان البرنامج المقترح / الجهة الخارجية المقترحة ']||o['عنوان البرنامج المقترح / الجهة الخارجية المقترحة']||o['عنوان البرنامج المقترح/ الجهة الخارجية المقترحة ']),priority:clean(o['الأولوية']),impact:clean(o['الأثر المتوقع بعد التطوير']),status:clean(o['حالة الاكتمال']),dept:deptMeta||sheetName,file:fileName,sheet:sheetName};
+      if(rec.need||rec.gap||rec.dev||rec.program) out.push(rec);
+    } return out;
+  }
+  async function loadFiles(files){rows=[]; let skipped=0; for(const file of files){try{const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); wb.SheetNames.forEach(sn=>{const got=parseSheet(wb.Sheets[sn],file.name,sn); if(!got.length) skipped++; rows.push(...got)});}catch(e){console.error(e); skipped++}}
+    $('status').textContent=`تمت قراءة ${files.length} ملف/ملفات، واستخراج ${rows.length} سجل احتياج${skipped?' • تم تجاوز '+skipped+' تبويب غير مطابق للنموذج':''}.`; renderAll();
+  }
+  function counts(key,data=rows){const m={}; data.forEach(r=>{const v=clean(r[key])||'غير محدد';m[v]=(m[v]||0)+1}); return m}
+  function sortedEntries(obj,limit){let a=Object.entries(obj).sort((a,b)=>b[1]-a[1]);return limit?a.slice(0,limit):a}
+  function setOptions(id,vals){const sel=$(id),old=sel.value; while(sel.options.length>1)sel.remove(1); [...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar')).forEach(v=>sel.add(new Option(v,v))); if([...sel.options].some(o=>o.value===old))sel.value=old}
+  function drawChart(id,type,entries){if(charts[id])charts[id].destroy(); const ctx=$(id); charts[id]=new Chart(ctx,{type,data:{labels:entries.map(x=>x[0]),datasets:[{data:entries.map(x=>x[1]),backgroundColor:['#146c5a','#c49a4a','#5c7c89','#8c6d46','#4f8f7f','#b66b4f','#7a8da0','#71986d']}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:type==='bar'?'y':'x',plugins:{legend:{display:type==='doughnut',position:'bottom'}},scales:type==='doughnut'?{}:{x:{beginAtZero:true,ticks:{precision:0}},y:{ticks:{autoSkip:false}}}}})}
+  function renderAll(){if(!rows.length){$('dashboard').classList.add('hidden');$('empty').classList.remove('hidden');return} $('empty').classList.add('hidden');$('dashboard').classList.remove('hidden');
+    $('kTotal').textContent=rows.length; $('kEmployees').textContent=new Set(rows.map(r=>r.name)).size; $('kCourses').textContent=rows.filter(r=>r.dev==='دورة تدريبية').length; $('kVisits').textContent=rows.filter(r=>r.dev==='تجارب / زيارات خارجية').length; $('kOjt').textContent=rows.filter(r=>r.dev==='تدريب أثناء العمل').length;
+    drawChart('devChart','doughnut',sortedEntries(counts('dev'))); drawChart('needChart','bar',sortedEntries(counts('need'))); drawChart('priorityChart','doughnut',sortedEntries(counts('priority'))); drawChart('deptChart','bar',sortedEntries(counts('dept'),10));
+    setOptions('fDev',rows.map(r=>r.dev));setOptions('fNeed',rows.map(r=>r.need));setOptions('fDept',rows.map(r=>r.dept));setOptions('fPriority',rows.map(r=>r.priority));setOptions('fStatus',rows.map(r=>r.status)); applyFilters();
+  }
+  function esc(s){return clean(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+  function badgePriority(v){const c=v.includes('عالية')?'high':v.includes('متوسطة')?'medium':v.includes('منخفضة')?'low':'';return `<span class="badge ${c}">${esc(v||'غير محدد')}</span>`}
+  function badgeStatus(v){const c=v.includes('مكتمل')?'ok':v.includes('ناقص')?'bad':'';return `<span class="badge ${c}">${esc(v||'غير محدد')}</span>`}
+  function applyFilters(){const q=clean($('search').value).toLowerCase(),fd=$('fDev').value,fn=$('fNeed').value,fp=$('fPriority').value,fs=$('fStatus').value,fdep=$('fDept').value; const filtered=rows.filter(r=>(!fd||r.dev===fd)&&(!fn||r.need===fn)&&(!fp||r.priority===fp)&&(!fs||r.status===fs)&&(!fdep||r.dept===fdep)&&(!q||[r.name,r.title,r.need,r.gap,r.dev,r.program,r.dept].join(' ').toLowerCase().includes(q)));
+    $('rowCount').textContent=`عرض ${filtered.length} من ${rows.length} سجل`;
+    $('tbody').innerHTML=filtered.map(r=>`<tr><td><strong>${esc(r.name)}</strong></td><td>${esc(r.title)}</td><td>${esc(r.dept)}</td><td><span class="badge">${esc(r.need||'غير محدد')}</span></td><td>${esc(r.dev||'غير محدد')}</td><td>${esc(r.gap)}</td><td>${esc(r.program)}</td><td>${badgePriority(r.priority)}</td><td>${esc(r.impact)}</td><td>${badgeStatus(r.status)}</td></tr>`).join('');
+  }
+  $('files').addEventListener('change',e=>{if(e.target.files.length)loadFiles([...e.target.files])}); ['search','fDev','fNeed','fDept','fPriority','fStatus'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',applyFilters)); $('printBtn').onclick=()=>window.print(); $('resetBtn').onclick=()=>{rows=[];$('files').value='';$('status').textContent='في انتظار رفع الملفات…';renderAll()};
+</script>
+</body>
+</html>
